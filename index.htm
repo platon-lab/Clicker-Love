@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ultimate Clicker: Friends Edition</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --card-bg: #ffffff;
+            --shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-gradient);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Екрани */
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        .screen.active {
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Меню вибору */
+        #char-select-screen h1 {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .char-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            max-width: 600px;
+        }
+
+        .char-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: transform 0.2s, border 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 4px solid transparent;
+        }
+
+        .char-card:hover {
+            transform: scale(1.05);
+            border-color: var(--primary-color);
+        }
+
+        .char-card img {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .char-card span {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #555;
+        }
+
+        /* Ігровий екран */
+        #game-screen {
+            justify-content: flex-start;
+            padding-top: 50px;
+        }
+
+        #score-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #click-count {
+            font-size: 4rem;
+            font-weight: 800;
+            color: #2c3e50;
+            text-shadow: 2px 2px 0px #fff, 4px 4px 0px rgba(0,0,0,0.1);
+        }
+
+        #cps-display {
+            font-size: 1.2rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        #click-area {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 20px auto;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        #click-area:active {
+            transform: scale(0.95);
+        }
+
+        #main-char-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
+            pointer-events: none; /* Кліки проходять крізь картинку на дів */
+        }
+
+        /* Кнопки інтерфейсу */
+        .ui-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            color: white;
+            transition: transform 0.1s, filter 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn:active {
+            transform: translateY(2px);
+        }
+
+        .btn-shop { background-color: #28a745; }
+        .btn-shop:hover { background-color: #218838; }
+
+        .btn-reset { background-color: #dc3545; font-size: 1rem; padding: 10px 20px;}
+        .btn-reset:hover { background-color: #c82333; }
+
+        /* Магазин */
+        #shop-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        #shop-content {
+            background: #fff;
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            border-radius: 20px;
+            padding: 25px;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .shop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .shop-header h2 { margin: 0; color: #333; }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #999;
+        }
+        .close-btn:hover { color: #333; }
+
+        .upgrade-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .upgrade-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .upgrade-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+
+        .upgrade-level {
+            font-size: 0.9rem;
+            color: #666;
+            background: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .upgrade-desc {
+            font-size: 0.9rem;
+            color: #555;
+            margin: 0;
+        }
+
+        .upgrade-stats {
+            font-size: 0.85rem;
+            color: #007bff;
+        }
+
+        .btn-buy {
+            background-color: #007bff;
+            width: 100%;
+            padding: 10px;
+            font-size: 1rem;
+            margin-top: 5px;
+        }
+        .btn-buy:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Анімація чисел при кліку */
+        .click-floater {
+            position: absolute;
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: #333;
+            pointer-events: none;
+            animation: floatUp 1s forwards;
+            z-index: 100;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-100px) scale(1.5); opacity: 0; }
+        }
+
+        /* Адаптивність */
+        @media (max-width: 600px) {
+            .char-grid { grid-template-columns: 1fr; }
+            #click-area { width: 220px; height: 220px; }
+            #click-count { font-size: 3rem; }
+            .btn { width: 100%; margin-bottom: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="char-select-screen" class="screen active">
+        <h1>Обери, кого будемо клікати!</h1>
+        <div class="char-grid">
+            <div class="char-card" onclick="selectCharacter('Tito.png')">
+                <img src="Tito.png" alt="Tito">
+                <span>Tito</span>
+            </div>
+            <div class="char-card" onclick="selectCharacter('Smartik.png')">
+                <img src="Smartik.png" alt="Smartik">
+                <span>Smartik</span>
+            </div>
+            <div class="char-card" onclick="selectCharacter('Junior.png')">
+                <img src="Junior.png" alt="Junior">
+                <span>Junior</span>
+            </div>
+            <div class="char-card" onclick="selectCharacter('Fil.png')">
+                <img src="Fil.png" alt="Fil">
+                <span>Fil</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div id="score-container">
+            <div>Кліків:</div>
+            <div id="click-count">0</div>
+            <div id="cps-display">Авто-кліків в сек: 0</div>
+        </div>
+
+        <div id="click-area">
+            <img id="main-char-img" src="" alt="Character">
+        </div>
+
+        <div class="ui-buttons">
+            <button class="btn btn-shop" id="open-shop-btn">МАГАЗИН ПОКРАЩЕНЬ</button>
+            <button class="btn btn-reset" id="reset-btn">Скинути Прогрес</button>
+        </div>
+    </div>
+
+    <div id="shop-overlay">
+        <div id="shop-content">
+            <div class="shop-header">
+                <h2>Магазин Покращень</h2>
+                <button class="close-btn" id="close-shop-btn">&times;</button>
+            </div>
+            <div id="upgrades-list">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        // --- КОНФІГУРАЦІЯ ТА ЗМІННІ ---
+
+        // Об'єкт збереження (те, що йде в localStorage)
+        let gameData = {
+            selectedChar: null, // Шлях до картинки
+            score: 0,
+            upgrades: {
+                clickPower: 0,          // Рівень: Улучшить клик
+                autoClicker: 0,         // Рівень: Автокликер
+                autoMultiplier: 0,      // Рівень: Множитель автокликера
+                autoClicker2: 0,        // Рівень: Автокликер 2.0
+                superClick: 0,          // Рівень: Супер Клик
+                globalMultiplier: 0,    // Рівень: Глобальний множитель
+                taskMaster: 0,          // Рівень: Мастер Задач
+                economy: 0,             // Рівень: Економія
+                phoenix: 0,             // Рівень: Фенікс (Бонус до сили)
+                speedy: 0               // Рівень: Швидкість анімації
+            },
+            startTime: Date.now()
+        };
+
+        // Базові ціни (як в оригіналі)
+        const BASE_PRICES = {
+            clickPower: 100,
+            autoClicker: 200,
+            autoMultiplier: 300,
+            autoClicker2: 400,
+            superClick: 500,
+            globalMultiplier: 600,
+            taskMaster: 700,
+            economy: 800,
+            phoenix: 900,
+            speedy: 1000
+        };
+
+        // Елементи DOM
+        const charSelectScreen = document.getElementById('char-select-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const mainCharImg = document.getElementById('main-char-img');
+        const scoreEl = document.getElementById('click-count');
+        const clickArea = document.getElementById('click-area');
+        const shopOverlay = document.getElementById('shop-overlay');
+        const upgradesList = document.getElementById('upgrades-list');
+        const cpsDisplay = document.getElementById('cps-display');
+
+        let autoClickerInterval = null;
+
+        // --- ІНІЦІАЛІЗАЦІЯ ---
+
+        function init() {
+            // Спроба завантажити дані
+            const saved = localStorage.getItem('myClickerSave_v1');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    // Об'єднуємо з дефолтними, щоб не ламалось при оновленнях
+                    gameData = { ...gameData, ...parsed, upgrades: { ...gameData.upgrades, ...parsed.upgrades } };
+                } catch (e) {
+                    console.error("Помилка збереження", e);
+                }
+            }
+
+            if (gameData.selectedChar) {
+                startGame(gameData.selectedChar);
+            } else {
+                // Якщо персонаж не обраний, показуємо меню (воно активне за замовчуванням у HTML)
+            }
+        }
+
+        // Вибір персонажа
+        window.selectCharacter = function(charFile) {
+            gameData.selectedChar = charFile;
+            saveGame();
+            startGame(charFile);
+        };
+
+        function startGame(charFile) {
+            charSelectScreen.classList.remove('active');
+            gameScreen.classList.add('active');
+            mainCharImg.src = charFile;
+            
+            updateUI();
+            startAutoClickerLoop();
+            renderShop(); // Генеруємо магазин
+        }
+
+        function saveGame() {
+            localStorage.setItem('myClickerSave_v1', JSON.stringify(gameData));
+        }
+
+        // --- ЛОГІКА ГРИ ---
+
+        // Розрахунок сили кліку (ручного)
+        function getClickPower() {
+            let base = 1;
+            // Улучшить клик: +1 за рівень
+            base += gameData.upgrades.clickPower;
+            // Супер клик: +1 за рівень (в оригіналі була така ж логіка, сумуємо)
+            base += gameData.upgrades.superClick;
+            // Фенікс: (в оригіналі було при зміні картинки, тут зробимо масивний бонус)
+            base += (gameData.upgrades.phoenix * 100); 
+
+            // Мастер задач: множник
+            let multiplier = 1 + (gameData.upgrades.taskMaster * 0.1);
+
+            return Math.floor(base * multiplier);
+        }
+
+        // Розрахунок автоклікера
+        function getAutoClickerStats() {
+            // Чи є автоклікер взагалі?
+            if (gameData.upgrades.autoClicker === 0) return { active: false, interval: 10000, amount: 0 };
+
+            // Базовий інтервал 10с. Кожен рівень -1с.
+            let interval = 10000 - (gameData.upgrades.autoClicker * 1000);
+            
+            // Автоклікер 2.0: зменшує інтервал ще на 100мс за рівень
+            interval -= (gameData.upgrades.autoClicker2 * 100);
+            
+            // Обмеження мінімуму (щоб не завис браузер)
+            if (interval < 100) interval = 100;
+
+            // Кількість за тік
+            let amount = 1;
+            // Множник автоклікера: додає до бази
+            amount += gameData.upgrades.autoMultiplier;
+            
+            // Глобальні множники
+            let globalMult = 1 + gameData.upgrades.globalMultiplier;
+            let taskMasterMult = 1 + (gameData.upgrades.taskMaster * 0.1);
+
+            let totalAmount = Math.floor(amount * globalMult * taskMasterMult);
+
+            return { active: true, interval: interval, amount: totalAmount };
+        }
+
+        // Основний клік
+        clickArea.addEventListener('pointerdown', (e) => {
+            const power = getClickPower();
+            gameData.score += power;
+            
+            // Анімація цифри
+            showFloatingNumber(e.clientX, e.clientY, `+${power}`);
+            
+            // Анімація натискання (залежить від Speedy Clicker)
+            const animDuration = Math.max(50, 100 - (gameData.upgrades.speedy * 10));
+            clickArea.style.transform = 'scale(0.95)';
+            setTimeout(() => clickArea.style.transform = 'scale(1)', animDuration);
+
+            updateUI();
+            saveGame();
+        });
+
+        function showFloatingNumber(x, y, text) {
+            const el = document.createElement('div');
+            el.className = 'click-floater';
+            el.textContent = text;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function startAutoClickerLoop() {
+            // Очищаємо попередній, якщо був
+            if (autoClickerInterval) clearInterval(autoClickerInterval);
+
+            const stats = getAutoClickerStats();
+            
+            // Оновлюємо відображення CPS (приблизно)
+            if (stats.active) {
+                const cps = (stats.amount / (stats.interval / 1000)).toFixed(1);
+                cpsDisplay.textContent = `Авто-кліків: ${stats.amount} кожні ${stats.interval/1000}с (CPS: ${cps})`;
+
+                autoClickerInterval = setInterval(() => {
+                    gameData.score += stats.amount;
+                    updateUI();
+                    saveGame(); // Зберігаємо не кожен тік, але тут можна, бо інтервал не надто малий
+                }, stats.interval);
+            } else {
+                cpsDisplay.textContent = `Авто-кліків: 0 (Купи автоклікер!)`;
+            }
+        }
+
+        function updateUI() {
+            scoreEl.textContent = Math.floor(gameData.score).toLocaleString();
+            updateShopButtons(); // Перевіряємо, чи вистачає грошей на кнопки
+        }
+
+        // --- МАГАЗИН ---
+
+        // Розрахунок ціни з урахуванням Економії
+        function getPrice(key) {
+            const base = BASE_PRICES[key];
+            const level = gameData.upgrades[key];
+            // Ціна росте лінійно: base * (level + 1)
+            let rawPrice = base * (level + 1);
+            
+            // Знижка від Економії (5% за рівень)
+            const discountPercent = gameData.upgrades.economy * 0.05;
+            let finalPrice = rawPrice * (1 - discountPercent);
+            
+            return Math.ceil(finalPrice);
+        }
+
+        // Визначення товарів
+        const SHOP_ITEMS = [
+            { id: 'clickPower', name: 'Улучшить клик', desc: '+1 до сили кліку.', max: null },
+            { id: 'autoClicker', name: 'Автокликер', desc: 'Клікає сам. Зменшує інтервал на 1с.', max: 10 },
+            { id: 'autoMultiplier', name: 'Сила Автокликера', desc: '+1 клік за спрацювання автоклікера.', max: null },
+            { id: 'autoClicker2', name: 'Автокликер 2.0', desc: 'Супер швидкість! -0.1с до інтервалу.', req: 'autoClicker', reqLevel: 10, max: 9 },
+            { id: 'superClick', name: 'Супер Клик', desc: 'Ще +1 до ручного кліку (додатково).', max: null },
+            { id: 'globalMultiplier', name: 'Глобальний Множник', desc: 'Множить усі автокліки (x2, x3...).', max: null },
+            { id: 'taskMaster', name: 'Мастер Задач', desc: '+10% до ефективності всього!', max: null },
+            { id: 'economy', name: 'Економія', desc: '-5% вартості автоклікерів та іншого.', max: 10 },
+            { id: 'phoenix', name: 'Фенікс Клік', desc: 'БОЖЕСТВЕННА СИЛА! +100 до кліку.', max: null },
+            { id: 'speedy', name: 'Швидкий палець', desc: 'Пришвидшує анімацію натискання.', max: 9 }
+        ];
+
+        function renderShop() {
+            upgradesList.innerHTML = '';
+            
+            SHOP_ITEMS.forEach(item => {
+                // Перевірка вимог (наприклад Автоклікер 2.0 тільки після звичайного)
+                if (item.req && gameData.upgrades[item.req] < item.reqLevel) return;
+
+                const div = document.createElement('div');
+                div.className = 'upgrade-item';
+                
+                const currentLevel = gameData.upgrades[item.id];
+                const price = getPrice(item.id);
+                const isMaxed = item.max && currentLevel >= item.max;
+
+                div.innerHTML = `
+                    <div class="upgrade-header">
+                        <span class="upgrade-title">${item.name}</span>
+                        <span class="upgrade-level">Рівень ${currentLevel}${item.max ? '/' + item.max : ''}</span>
+                    </div>
+                    <p class="upgrade-desc">${item.desc}</p>
+                    <div class="upgrade-stats">Ціна: ${isMaxed ? 'МАКС' : price}</div>
+                    <button class="btn btn-buy" id="btn-buy-${item.id}" ${isMaxed ? 'disabled' : ''}>
+                        ${isMaxed ? 'Куплено' : 'Купити'}
+                    </button>
+                `;
+                
+                upgradesList.appendChild(div);
+
+                // Подія покупки
+                if (!isMaxed) {
+                    document.getElementById(`btn-buy-${item.id}`).onclick = () => buyUpgrade(item.id);
+                }
+            });
+        }
+
+        function buyUpgrade(key) {
+            const price = getPrice(key);
+            if (gameData.score >= price) {
+                gameData.score -= price;
+                gameData.upgrades[key]++;
+                
+                saveGame();
+                updateUI();
+                renderShop(); // Перемалювати магазин (нові ціни/статуси)
+                
+                // Якщо купили щось, що впливає на таймер, перезапускаємо його
+                if (key === 'autoClicker' || key === 'autoClicker2' || key === 'autoMultiplier' || key === 'globalMultiplier' || key === 'taskMaster') {
+                    startAutoClickerLoop();
+                }
+            }
+        }
+
+        function updateShopButtons() {
+            SHOP_ITEMS.forEach(item => {
+                const btn = document.getElementById(`btn-buy-${item.id}`);
+                if (btn && !btn.disabled && btn.textContent !== 'Куплено') {
+                    const price = getPrice(item.id);
+                    if (gameData.score < price) {
+                        btn.style.opacity = '0.5';
+                        btn.style.cursor = 'not-allowed';
+                    } else {
+                        btn.style.opacity = '1';
+                        btn.style.cursor = 'pointer';
+                    }
+                }
+            });
+        }
+
+        // Відкриття/Закриття магазину
+        document.getElementById('open-shop-btn').onclick = () => {
+            renderShop(); // Оновлюємо перед відкриттям
+            shopOverlay.style.display = 'flex';
+        };
+        document.getElementById('close-shop-btn').onclick = () => shopOverlay.style.display = 'none';
+        shopOverlay.addEventListener('click', (e) => {
+            if (e.target === shopOverlay) shopOverlay.style.display = 'none';
+        });
+
+        // --- СКИДАННЯ ПРОГРЕСУ (HARD RESET) ---
+
+        document.getElementById('reset-btn').onclick = () => {
+            // Попередження 1
+            if (confirm("УВАГА! Ти хочеш скинути ВЕСЬ прогрес? Всі кліки та покупки зникнуть!")) {
+                // Попередження 2
+                if (confirm("ТИ ТОЧНО ВПЕВНЕНИЙ? Це неможливо буде повернути! Гру доведеться починати з самого початку!")) {
+                    // Попередження 3
+                    if (confirm("ОСТАННЄ ПОПЕРЕДЖЕННЯ! Натиснувши 'ОК', ти видалиш збереження НАЗАВЖДИ. Робимо це?")) {
+                        localStorage.removeItem('myClickerSave_v1');
+                        location.reload(); // Перезавантаження сторінки
+                    }
+                }
+            }
+        };
+
+        // Запуск
+        window.onload = init;
+
+    </script>
+</body>
+</html>
